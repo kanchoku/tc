@@ -70,14 +70,20 @@
 ;;;
 ;;; patch to original functions in isearch.el of Emacs 22
 ;;;
+(require 'isearch)
+
+(defsubst tcode-isearch-regexp-function ()
+  (or (bound-and-true-p isearch-regexp-function)
+      (bound-and-true-p isearch-word)))
+
 (defadvice isearch-search-string (around tcode-handling activate)
-  (let ((isearch-regexp (if (or isearch-word isearch-regexp)
+  (let ((isearch-regexp (if (or (tcode-isearch-regexp-function) isearch-regexp)
                             isearch-regexp
                           tcode-isearch-enable-wrapped-search)))
     ad-do-it))
 
 (defun tcode-isearch-search-fun ()
-  (cond (isearch-word
+  (cond ((tcode-isearch-regexp-function)
 	 (if isearch-forward
 	     'word-search-forward 'word-search-backward))
 	((or isearch-regexp
