@@ -70,8 +70,6 @@
 ;;;
 ;;; patch to original functions in isearch.el of Emacs 22
 ;;;
-(require 'isearch)
-
 (defsubst tcode-isearch-regexp-function ()
   (or (bound-and-true-p isearch-regexp-function)
       (bound-and-true-p isearch-word)))
