@@ -42,17 +42,7 @@
   "日本語Emacsのタイプ。
 nemacs, mule-1, mule-2, mule-3, mule-4, xemacsのいずれか。")
 
-(defconst tcode-isearch-type 
-  (cond ((eq tcode-emacs-version 'nemacs)
-	 'tc-is18)
-	((memq tcode-emacs-version '(mule-1 mule-2 mule-3 xemacs))
-	 'tc-is19)
-	((numberp (string-match "^\\(2[56]\\|24\\.[34]\\)" emacs-version))
-	 'tc-is243)
-	((numberp (string-match "^2[234]" emacs-version))
-	 'tc-is22)
-	(t
-	 'tc-is20))
+(defconst tcode-isearch-type 'tc-is22
   "isearchで用いるTコード用モジュールのタイプ。")
 
 (defmacro tcode-xemacs-p ()
