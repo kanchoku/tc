@@ -83,10 +83,12 @@
       (when (fboundp 'isearch-message-state)
 	(isearch-message-state x))))
 
-;; isearch-top-state -> none (isearch-pop-state) from 24
+;; isearch-top-state -> none
+;; -> (isearch--set-state (car isearch-cmds)) from 24
 (defsubst tcode-isearch-top-state ()
   (or (bound-and-true-p isearch-top-state)
-      (bound-and-true-p isearch-pop-state)))
+      (when (fboundp 'isearch--set-state)
+	(isearch--set-state (car isearch-cmds)))))
 
 (defadvice isearch-search-string (around tcode-handling activate)
   (let ((isearch-regexp (if (or (tcode-isearch-regexp-function) isearch-regexp)
