@@ -229,28 +229,19 @@ BODY should be a list of lisp expressions."
   (defun buffer-substring-no-properties (start end)
     (buffer-substring start end)))
 
-;;;
-;;; Fix incompatibilities between 18 and 19.
-;;;
-(if (string-match "^\\(19\\|2[01234567]\\)" emacs-version)
-    (progn
-      (defun tcode-redo-command (ch)
-	"キー CH を現在のキーマップで再実行する"
-	(setq unread-command-events
-	      (cons (character-to-event ch) unread-command-events)))
-      (or (fboundp 'character-to-event)
-	  (defun character-to-event (ch)
-	    ch))
-      ;; XEmacs
-      (or (fboundp 'isearch-last-command-char)
-	  (defun isearch-last-command-char ()
-	    last-command-event))
-      (or (boundp 'search-upper-case)
-	  (setq search-upper-case 'not-yanks)))
-  ;; NEmacs
-  (defun tcode-redo-command (ch)
-    "キー CH を現在のキーマップで再実行する"
-    (setq unread-command-char ch)))
+(defun tcode-redo-command (ch)
+  "キー CH を現在のキーマップで再実行する"
+  (setq unread-command-events
+	(cons (character-to-event ch) unread-command-events)))
+(or (fboundp 'character-to-event)
+    (defun character-to-event (ch)
+      ch))
+;; XEmacs
+(or (fboundp 'isearch-last-command-char)
+    (defun isearch-last-command-char ()
+      last-command-event))
+(or (boundp 'search-upper-case)
+    (setq search-upper-case 'not-yanks))
 
 (if (not (tcode-nemacs-p))
     (progn
