@@ -25,6 +25,10 @@
 ;;; Code:
 (require 'tc-pre)
 
+(when (or (not (boundp 'emacs-major-version))
+	  (< emacs-major-version 19))
+  (error "Old Emacs? Emacs-19 and later is supported."))
+
 ;;;
 ;;; Define some new functions that are not present in Emacs 18.
 ;;;

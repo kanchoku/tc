@@ -11,6 +11,10 @@ T-code is a Japanese input method that does NOT use Kana-to-Kanji conversion.
 You can input Kanji characters directly in the same way of inputting Hiragana.  
 TUT-code is one of the T-code alternatives.
 
+## Requirement
+
+Emacs 19以降をサポートします。
+
 ## install方法
 
 まず
