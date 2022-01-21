@@ -167,8 +167,7 @@ nil でない引数があれば、カーソルの色がモードにより変わ�
 ただし、削除されるのは読みにその漢字が含まれていない項目だけ。"
   (interactive
    (let ((minibuffer-setup-hook
-	  (unless (or (tcode-nemacs-p)
-		      (tcode-mule-1-p))
+	  (unless (tcode-mule-1-p)
 	    (cons 'tcode-activate minibuffer-setup-hook))))
      (list (read-from-minibuffer "削除する漢字 "))))
   (and (or (string= kanji "")
@@ -599,9 +598,7 @@ PREFIX が nil でなければリージョン中の文字列で始まる文字�
 
 (defvar tcode-kutouten-regexp-alist
   (list '("[、。]" . 1)
-	(if (tcode-nemacs-p)
-	    '("\\z[,.]" . 2)
-	  '("\\cj[,.]" . 2)))
+	'("\\cj[,.]" . 2))
   "* 句読点を判定するための正規表現の alist。
 リストの各要素は、
 その句読点が使われていることを判定するための正規表現と、

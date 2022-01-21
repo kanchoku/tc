@@ -75,8 +75,7 @@ nil の場合には保存されない。")
   "* nil でないとき、可変語尾変換ができる。")
 
 (defvar tcode-mazegaki-prefix-mark
-  (if (or (tcode-nemacs-p)
-	  (tcode-mule-1-p)
+  (if (or (tcode-mule-1-p)
 	  (and (boundp 'window-system)
 	       (not window-system)))
       (if (fboundp 'make-glyph)
@@ -86,8 +85,7 @@ nil の場合には保存されない。")
   "* 交ぜ書き変換の始点を表すしるし。")
 
 (defvar tcode-mazegaki-face
-  (if (or (tcode-nemacs-p)
-	  (tcode-mule-1-p)
+  (if (or (tcode-mule-1-p)
 	  (and (boundp 'window-system)
 	       (not window-system)))
       nil
@@ -223,7 +221,7 @@ See also variable `tcode-mazegaki-candidate-state'.")
 
 ;;;; 辞書の検索と変換
 
-(cond ((or (tcode-nemacs-p) (tcode-mule-1-p))
+(cond ((tcode-mule-1-p)
        (defun tcode-mazegaki-delete-conversion-face ()
 	 (if tcode-mazegaki-prefix-overlay
 	     (save-excursion

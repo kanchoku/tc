@@ -235,15 +235,7 @@ When optional HELPED is non-nil, list uninputted characters also."
       (insert "))\n")
       (tcode-save-buffer bufname tcode-input-statistics-file-name t)))))
 
-(if (tcode-nemacs-p)
-    ;; avoid bug of multiple functions in `kill-emacs-hook'
-    (unless (fboundp 'tcode:kill-emacs-function)
-      (fset 'tcode:kill-emacs-function
-	    (symbol-function 'tcode-kill-emacs-function))
-      (defun tcode-kill-emacs-function ()
-	(tcode-save-input-statistics)
-	(tcode:kill-emacs-function)))
-  (add-hook 'kill-emacs-hook 'tcode-save-input-statistics))
+(add-hook 'kill-emacs-hook 'tcode-save-input-statistics)
 
 (setq tcode-input-filter-functions
       (cons '(tcode-count-input-statistics . tcode-count-char)

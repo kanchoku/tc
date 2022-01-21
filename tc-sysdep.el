@@ -99,11 +99,8 @@ function, it is changed to a list of functions."
 カタカナでない場合はそのままの値を返す。"
     (let ((str (char-to-string char)))
       (if (string-match (concat "^[ァ-ン]$") str)
-	  (if (tcode-nemacs-p)
-	      (let ((ch (mod char 256)))
-		(+ (* ?\244 256) ch))
-	    (let ((ch (char-component char 2)))
-	      (make-character lc-jp ?\244 ch)))
+	  (let ((ch (char-component char 2)))
+	    (make-character lc-jp ?\244 ch))
 	char))))
 
 (unless (fboundp 'japanese-katakana)
@@ -112,11 +109,8 @@ function, it is changed to a list of functions."
 ひらがなでない場合はそのままの値を返す。"
     (let ((str (char-to-string char)))
       (if (string-match (concat "^[ぁ-ん]$") str)
-	  (if (tcode-nemacs-p)
-	      (let ((ch (mod char 256)))
-		(+ (* ?\245 256) ch))
-	    (let ((ch (char-component char 2)))
-	      (make-character lc-jp ?\245 ch)))
+	  (let ((ch (char-component char 2)))
+	    (make-character lc-jp ?\245 ch))
 	char))))
 
 (defconst tcode-jisx0208 (if (tcode-mule-2-p)
@@ -243,76 +237,15 @@ BODY should be a list of lisp expressions."
 (or (boundp 'search-upper-case)
     (setq search-upper-case 'not-yanks))
 
-(if (not (tcode-nemacs-p))
-    (progn
-      (defun tcode-string-to-char (p) (string-to-char p))
-      (defmacro tcode-following-char () (list 'following-char))
-      (defmacro tcode-preceding-char () (list 'preceding-char))
-      (defmacro tcode-forward-char (p) (list 'forward-char p))
-      (defmacro tcode-backward-char (p) (list 'backward-char p))
-      (or (fboundp 'string-to-list)
-	  (defun string-to-list (s)
-	    (string-to-char-list s)))
-      (defmacro tcode-delete-char (p) (list 'delete-char p)))
-  ;;;
-  ;;; NEmacs 用の定義
-  ;;; 以下の関数では，2バイト文字を数値に変換すると，
-  ;;; (1バイト目*256 + 2バイト目)になる。
-  ;;;
-  (defun char-width (c)
-    (if (> c 256) 2 1))
-  (unless (fboundp 'orig:char-to-string)
-    (fset 'orig:char-to-string (symbol-function 'char-to-string))
-    (defun char-to-string (c)
-      (if (> c 256)
-	  (format "%c%c" (/ c 256) (mod c 256))
-	(orig:char-to-string c))))
-  (defun tcode-string-to-char (s)
-    (let ((1st (aref s 0)))
-      (if (>= 1st 128)
-          (+ (* 1st 256) (aref s 1))
-        1st)))
-  (defun tcode-following-char ()
-    (let ((1st (following-char)))
-      (if (and 1st
-	       (>= 1st 128))
-          (+ (* 1st 256) (char-after (1+ (point))))
-        1st)))
-  (defun tcode-preceding-char ()
-    (let ((1st (char-after (save-excursion (backward-char 1) (point)))))
-      (if (and 1st
-	       (>= 1st 128))
-	  (+ (* 1st 256) (preceding-char))
-	(preceding-char))))
-  (defun string-to-list (s)
-    (kanji-word-list s))
-  (defun tcode-forward-char (i)
-    (if (< i 0)
-	(while (< i 0)
-	  (if (>= (preceding-char) 128) (backward-char 2)
-	    (backward-char 1))
-	  (setq i (1+ i)))
-      (while (> i 0)
-	(if (>= (char-after (point)) 128) (forward-char 2)
-	  (forward-char 1))
-	(setq i (1- i)))))
-  (defmacro tcode-backward-char (i)
-    (list 'tcode-forward-char (list '- 0 i)))
-
-  (defun tcode-delete-char (i)
-    (if (< i 0)
-	(while (< i 0)
-	  (if (>= (preceding-char) 128)
-	      (delete-char -2)
-	    (delete-char -1))
-	  (setq i (1+ i)))
-      (while (> i 0)
-	(if (>= (char-after (point)) 128)
-	    (delete-char 2)
-	  (delete-char 1))
-	(setq i (1- i)))))
-
-  (defmacro string-width (p) (list 'length p)))
+(defun tcode-string-to-char (p) (string-to-char p))
+(defmacro tcode-following-char () (list 'following-char))
+(defmacro tcode-preceding-char () (list 'preceding-char))
+(defmacro tcode-forward-char (p) (list 'forward-char p))
+(defmacro tcode-backward-char (p) (list 'backward-char p))
+(or (fboundp 'string-to-list)
+    (defun string-to-list (s)
+      (string-to-char-list s)))
+(defmacro tcode-delete-char (p) (list 'delete-char p))
 
 (defun tcode-do-auto-fill ()
   (cond ((boundp 'auto-fill-function)
@@ -413,9 +346,8 @@ See also the variable `input-method-verbose-flag'."
 (or (and (boundp 'tcode-mode-indicator)
 	 (tcode-find-symbol-in-tree 'tcode-mode-indicator
 				    (default-value 'mode-line-format)))
-    (cond ((or (tcode-nemacs-p)
-	       (tcode-xemacs-p))
-	   
+    (cond ((tcode-xemacs-p)
+
 	   (setq-default mode-line-format
 			 (cons '(tcode-ready-in-this-buffer
 				 ("[" tcode-mode-indicator "]"))
@@ -506,7 +438,7 @@ without loading the relevant Quail packages."
       (apply (nth 2 slot) input-method (nthcdr 5 slot))
       (setq current-input-method input-method))))
 
-(when (or (memq tcode-emacs-version '(nemacs mule-1 mule-2))
+(when (or (memq tcode-emacs-version '(mule-1 mule-2))
 	  (and (eq tcode-emacs-version 'xemacs)
 	       (< emacs-major-version 21)
 	       (< emacs-minor-version 3)))

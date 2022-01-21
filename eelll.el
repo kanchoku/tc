@@ -663,14 +663,7 @@ Emacs内部のcompletionの実装上の問題のため、「?」を
 			     (length (member (format "%d" eelll-last-lesson)
 					     hist))
 			     -1)))
-		 (str (cond ((tcode-nemacs-p)
-			     (completing-read 
-			      "練習テキスト[`?'で一覧] "
-			      lesson-alist nil t
-			      (if eelll-last-lesson
-				  (format "%d" eelll-last-lesson)
-				"")))
-			    ((tcode-xemacs-p)
+		 (str (cond ((tcode-xemacs-p)
 			     (completing-read
 			      "練習テキスト[`?'で一覧] "
 			      lesson-alist nil t
@@ -722,7 +715,7 @@ Emacs内部のcompletionの実装上の問題のため、「?」を
     (insert str)
     (when (and (fboundp 'put-text-property)
 	       window-system)
-      (put-text-property beg (point) 'face 'eelll))))
+      (put-text-property beg (point) 'face 'eelll-face))))
 
 (defun eelll-put-help-char (c)
   (if (or eelll-use-column-for-help

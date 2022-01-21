@@ -41,11 +41,9 @@
 	((featurep 'mule)
 	 'mule-1)
 	(t
-	 (or (boundp 'emacs-major-version)
-	     (setq emacs-major-version 18))
-	 'nemacs))
+	 (error "nemacs is no longer supported")))
   "日本語Emacsのタイプ。
-nemacs, mule-1, mule-2, mule-3, mule-4, xemacsのいずれか。")
+mule-1, mule-2, mule-3, mule-4, xemacsのいずれか。")
 
 (defconst tcode-isearch-type 'tc-is22
   "isearchで用いるTコード用モジュールのタイプ。")
@@ -64,9 +62,6 @@ nemacs, mule-1, mule-2, mule-3, mule-4, xemacsのいずれか。")
 
 (defmacro tcode-mule-1-p ()
   (list 'eq 'tcode-emacs-version (list 'quote 'mule-1)))
-
-(defmacro tcode-nemacs-p ()
-  (list 'eq 'tcode-emacs-version (list 'quote 'nemacs)))
 
 (defvar tcode-load-immediate nil
   "nil でないとき、Tコード用のすべてのモジュールを一度にロードする。")
@@ -104,8 +99,6 @@ nemacs, mule-1, mule-2, mule-3, mule-4, xemacsのいずれか。")
 			   " on XEmacs "
 			 " on Emacs ")
 		       emacs-version
-		       (if (boundp 'nemacs-version)
-			   (concat "/NEmacs " nemacs-version))
 		       (if (boundp 'mule-version)
 			   (concat "/Mule " mule-version))))
     tcode-version))

@@ -35,7 +35,7 @@
 	       tcode-use-as-default-input-method t)
 	 (load tcode-init-file-name)))
   ;; map toggle-input-method to `C-\'
-  (if (or (memq tcode-emacs-version '(nemacs mule-1 mule-2))
+  (if (or (memq tcode-emacs-version '(mule-1 mule-2))
 	  (and (eq tcode-emacs-version 'xemacs)
 	       (< emacs-major-version 21)
 	       (< emacs-minor-version 3)))
@@ -123,8 +123,7 @@
   (autoload 'tcode-insert-register "tc-util" nil t)
   (autoload 'tcode-transpose-strokes "tc-util" nil t)
   (autoload 'set-tcode-mode-key "tc-util" nil t)
-  (and (not (eq tcode-emacs-version 'nemacs))
-       window-system
+  (and window-system
        (autoload 'tcode-enable-cursor-to-change-color "tc-util" nil t))
   (autoload 'tcode-mazegaki-delete-kanji-from-dictionary "tc-util" nil t)
   (autoload 'tcode-mazegaki-get-yomi-max "tc-util" nil t)

@@ -1238,15 +1238,12 @@ The remaining arguments are libraries to be loaded before using the package."
     (while events
       (let* ((ch (car events))
 	     (command (tcode-default-key-binding (char-to-string ch))))
-	(if (and (tcode-nemacs-p)
-		 (not (commandp command)))
-	    (tcode-insert ch)
-	  (if (not (commandp command))
-	      (setq command 'self-insert-command))
-	  (setq prefix-arg current-prefix-arg
-		this-command command
-		last-command-event ch) ; for self-insert-command
-	  (command-execute command)))
+	(if (not (commandp command))
+	    (setq command 'self-insert-command))
+	(setq prefix-arg current-prefix-arg
+	      this-command command
+	      last-command-event ch) ; for self-insert-command
+	(command-execute command))
       (setq events (cdr events)))))
 
 (unless tcode-use-input-method
@@ -1381,8 +1378,7 @@ Type \\[tcode-mode-help] for more detail."
 	    (offset 0))
         (while (< i 10)
           (aset fv i (format "%%%s%ds"
-                             (if (or (>= i 5)
-				     (tcode-nemacs-p))
+                             (if (>= i 5)
 				 ""
 			       "-")
                              (apply 'max 4
