@@ -25,6 +25,11 @@
 (defconst tcode-emacs-version
   (cond ((string-match "XEmacs" emacs-version)
 	 'xemacs)
+	;; mule-version is obsolete since emacs 28.1
+	((or (>= emacs-major-version 29)
+	     (and (= emacs-major-version 28)
+		  (>= emacs-minor-version 1)))
+	 'mule-4)
 	((and (boundp 'mule-version)
 	      (>= (string-to-number mule-version) 4))
 	 'mule-4)
