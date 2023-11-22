@@ -1142,7 +1142,7 @@ Tコードモードについては、\\[tcode-mode-help] で表示されるヘ�
 	    (setq tcode-mode nil
 		  tcode-self-insert-non-undo-count 1)
 	    (tcode-clear)
-	    (run-hooks 'input-method-inactivate-hook))
+	    (run-hooks 'input-method-deactivate-hook))
 	(setq input-method-function nil))
     ;; activate T-Code mode
     (if (window-minibuffer-p (selected-window))

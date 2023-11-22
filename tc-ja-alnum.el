@@ -53,7 +53,7 @@
       (unwind-protect
 	  (progn
 	    (setq tcode-2byte-alnum-mode nil)
-	    (run-hooks 'input-method-inactivate-hook))
+	    (run-hooks 'input-method-deactivate-hook))
 	(setq input-method-function nil))
     ;; activate T-Code mode
     (setq tcode-2byte-alnum-mode t)
