@@ -91,7 +91,7 @@ nil の場合には保存されない。")
       nil
     (prog1
 	(make-face 'mazegaki-conversion)
-      (set-face-underline-p 'mazegaki-conversion t)))
+      (set-face-underline 'mazegaki-conversion t)))
   "* 交ぜ書き変換の変換対象を表す文字列に用いるface。
 mule2 以上または XEmacs の場合のみ有効。")
 (defvar tcode-mazegaki-prefix-overlay nil)
