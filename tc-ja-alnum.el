@@ -65,7 +65,7 @@
 
 ;;;###autoload
 (defun tcode-use-2byte-alnum (package-name &rest libraries)
-  (setq inactivate-current-input-method-function 'tcode-2byte-alnum-inactivate
+  (setq deactivate-current-input-method-function 'tcode-2byte-alnum-inactivate
 	describe-current-input-method-function nil
 	current-input-method package-name)
   (tcode-2byte-alnum-mode 1))

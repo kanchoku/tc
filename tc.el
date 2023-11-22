@@ -1201,7 +1201,7 @@ The remaining arguments are libraries to be loaded before using the package."
 	(setq libraries (cdr libraries)))
       (tcode-load-table table-name))
     (setq tcode-current-package package-name))
-  (setq inactivate-current-input-method-function 'tcode-inactivate
+  (setq deactivate-current-input-method-function 'tcode-inactivate
 	describe-current-input-method-function 'tcode-mode-help)
   (setq current-input-method-title 'tcode-mode-indicator)
   (tcode-activate))
