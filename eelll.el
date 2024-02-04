@@ -186,7 +186,7 @@
     (goto-char (point-min))
     (while (and (> max-line 0)
 		(> lines 0))
-      (goto-line (1+ (random lines)))
+      (forward-line (- (1+ (random lines)) (line-number-at-pos)))
       (if (eolp)
 	  (progn
 	    (unless (eobp)
@@ -374,7 +374,7 @@ Tコードで入力できなければnilを返す。"
 		  (fr (/ (car stroke) 10))
 		  (sc (% second 5))
 		  (sr (/ second 10)))
-	     (goto-line (+ (* sr 5) fr 1))
+	     (forward-line (- (+ (* sr 5) fr 1) (line-number-at-pos)))
 	     (move-to-column (+ 4 (* 12 sc) (* 2 fc)
 				(if (> sc (if eelll-second-hand 0 3)) 2 0)))
 	     (tcode-delete-char 1)

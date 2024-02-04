@@ -487,7 +487,7 @@ FOR-HELPがnilでない場合は、直接入力できる字に分解する。"
 
 (defun tcode-help-stroke (loc ch)
   "subroutine of `tcode-draw-stroke-for-char'."
-  (goto-line (1+ (car loc)))
+  (forward-line (- (1+ (car loc)) (line-number-at-pos)))
   (move-to-column (+ (* 2 (cdr loc)) (if (>= (cdr loc) 6) 0 -2)))
   (tcode-delete-char (if (= (char-width (tcode-following-char)) 2) 
 			 1 
@@ -534,7 +534,7 @@ FOR-HELPがnilでない場合は、直接入力できる字に分解する。"
 	(if (and (<= 0 addr) (< addr 40))
 	    (tcode-help-stroke (tcode-get-key-location addr) char)
 	  (setq char (tcode-key-to-help-string addr)))
-	(goto-line (if (= (mod i 2) 0) 3 4))
+	(forward-line (- (if (= (mod i 2) 0) 3 4) (line-number-at-pos)))
 	(end-of-line)
 	(insert "     " char "…第" str "打鍵")
 	(setq i (1+ i)
