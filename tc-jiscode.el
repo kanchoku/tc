@@ -35,7 +35,7 @@
 (defvar tcode-jiscode-map nil)
 (unless tcode-jiscode-map
   (setq tcode-jiscode-map (make-sparse-keymap))
-  (mapcar
+  (mapc
    (lambda (elm)
      (let ((cmd (car elm))
 	   (key (cdr elm)))

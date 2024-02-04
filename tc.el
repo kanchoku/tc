@@ -402,18 +402,18 @@ nil のときは `tcode-mode' から得る。")
 		  i (1+ i)))
 	  (setq list (cons layout (nreverse list))))))
     (let ((i 0))
-      (mapcar (lambda (char)
-		(cond ((null char)
-		       (aset table (- char ? ) -1))
-		      ((and tcode-shift-lowercase
-			    (/= (upcase char) char))
-		       (aset table (- char ? ) i)
-		       (aset table (- (upcase char) ? ) -2))
-		      (t
-		       (aset table (- char ? ) i)))
-		(setq i (1+ i))
-		(if (= i 40) (setq i 100)))
-	      (cdr list)))
+      (mapc (lambda (char)
+	      (cond ((null char)
+		     (aset table (- char ? ) -1))
+		    ((and tcode-shift-lowercase
+			  (/= (upcase char) char))
+		     (aset table (- char ? ) i)
+		     (aset table (- (upcase char) ? ) -2))
+		    (t
+		     (aset table (- char ? ) i)))
+	      (setq i (1+ i))
+	      (if (= i 40) (setq i 100)))
+	    (cdr list)))
     (let ((char ? ))
       (while (<= char ?~)
 	(if (lookup-key tcode-mode-map (char-to-string char))
@@ -667,16 +667,16 @@ t ... cancel"
 	 nil)))
 
 (defun tcode-apply-filters (list)
-  (mapcar (lambda (alist)
-	    (if (eval (car alist))
-		(let ((v (mapcar (lambda (c) (funcall (cdr alist) c))
-				 list)))
-		  (setq list (apply 'nconc
-				    (mapcar (lambda (e) (if (stringp e)
-						       (string-to-list e)
-						     (list e)))
-					    v))))))
-	  tcode-input-filter-functions)
+  (mapc (lambda (alist)
+	  (if (eval (car alist))
+	      (let ((v (mapcar (lambda (c) (funcall (cdr alist) c))
+			       list)))
+		(setq list (apply 'nconc
+				  (mapcar (lambda (e) (if (stringp e)
+						          (string-to-list e)
+						        (list e)))
+					  v))))))
+	tcode-input-filter-functions)
   list)
 
 (defun tcode-input-method (ch)
@@ -1006,9 +1006,9 @@ ARG が nil でないとき、ARG 番目の組に切り替える。"
     (tcode-set-action-to-table prefix new-table)
     (tcode-set-stroke-property new-table nil t prefix)
     ;; コマンドをテーブルに登録する。
-    (mapcar (lambda (elm)
-	      (tcode-set-action-to-table (append prefix (car elm)) (cdr elm)))
-	    tcode-special-commands-alist)
+    (mapc (lambda (elm)
+	    (tcode-set-action-to-table (append prefix (car elm)) (cdr elm)))
+	  tcode-special-commands-alist)
     (setq tcode-special-commands-alist nil) ; free
     ))
 
@@ -1023,9 +1023,9 @@ ARG が nil でないとき、ARG 番目の組に切り替える。"
   (setq tcode-stroke-table (and (> tcode-stroke-table-size 0)
 				(make-vector tcode-stroke-table-size 0)))
   (tcode-load-table-1 filename)
-  (mapcar (lambda (x) (tcode-load-table-1 (nth 1 x)
-					  (car x)))
-	  tcode-special-prefix-alist)
+  (mapc (lambda (x) (tcode-load-table-1 (nth 1 x)
+					(car x)))
+	tcode-special-prefix-alist)
   (let ((l tcode-ext-keys)
 	(i 40))
     (while l
@@ -1350,11 +1350,11 @@ Type \\[tcode-mode-help] for more detail."
 	 draw-table)
      ;; table はリスト
      (let ((draw-table (make-vector 40 nil)))
-       (mapcar (lambda (elm)
-		 (aset draw-table
-		       (car elm)
-		       (tcode-action-to-printable (cdr elm))))
-	       table)
+       (mapc (lambda (elm)
+	       (aset draw-table
+		     (car elm)
+		     (tcode-action-to-printable (cdr elm))))
+	     table)
        draw-table))
    1 1))
 
