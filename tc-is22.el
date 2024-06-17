@@ -169,7 +169,7 @@
   (if (and (not isearch-regexp)
 	   (boundp 'tcode-isearch-enable-wrapped-search)
 	   tcode-isearch-enable-wrapped-search
-	   (memq char '(?$ ?* ?+ ?. ?? ?[ ?\\ ?] ?^)))
+	   (memq char '(?$ ?* ?+ ?. ?? ?\[ ?\\ ?\] ?^)))
       (let ((s (char-to-string char)))
 	(isearch-process-search-string (concat "\\" s) s))
     ad-do-it))
