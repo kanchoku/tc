@@ -98,8 +98,7 @@
 
 (defun tcode-isearch-search-fun ()
   (cond ((tcode-isearch-regexp-function)
-	 (if isearch-forward
-	     'word-search-forward 'word-search-backward))
+	 (isearch-search-fun-default))
 	((or isearch-regexp
 	     (and (boundp 'tcode-isearch-enable-wrapped-search)
 		  tcode-isearch-enable-wrapped-search))
