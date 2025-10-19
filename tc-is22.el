@@ -96,19 +96,6 @@
                           tcode-isearch-enable-wrapped-search)))
     ad-do-it))
 
-(defun tcode-isearch-search-fun ()
-  (cond ((tcode-isearch-regexp-function)
-	 (if isearch-forward
-	     'word-search-forward 'word-search-backward))
-	((or isearch-regexp
-	     (and (boundp 'tcode-isearch-enable-wrapped-search)
-		  tcode-isearch-enable-wrapped-search))
-	 (if isearch-forward
-	     're-search-forward 're-search-backward))
-	(t
-	 (if isearch-forward 'search-forward 'search-backward))))
-(setq isearch-search-fun-function #'tcode-isearch-search-fun)
-
 (defun isearch-printing-char ()
   "Add this ordinary printing character to the search string and search."
   (interactive)
