@@ -186,7 +186,7 @@
     (goto-char (point-min))
     (while (and (> max-line 0)
 		(> lines 0))
-      (goto-line (1+ (random lines)))
+      (forward-line (- (1+ (random lines)) (line-number-at-pos)))
       (if (eolp)
 	  (progn
 	    (unless (eobp)
@@ -364,7 +364,7 @@ Tコードで入力できなければnilを返す。"
 	  (delete-horizontal-space)
 	  (insert "\n"))
 	(if (< i 4) (insert "\n"))))
-    (mapcar
+    (mapc
      (lambda (c)
        (let ((stroke (eelll-stroke-for-char (char-to-string c))))
 	 (when (and stroke
@@ -374,7 +374,7 @@ Tコードで入力できなければnilを返す。"
 		  (fr (/ (car stroke) 10))
 		  (sc (% second 5))
 		  (sr (/ second 10)))
-	     (goto-line (+ (* sr 5) fr 1))
+	     (forward-line (- (+ (* sr 5) fr 1) (line-number-at-pos)))
 	     (move-to-column (+ 4 (* 12 sc) (* 2 fc)
 				(if (> sc (if eelll-second-hand 0 3)) 2 0)))
 	     (tcode-delete-char 1)
@@ -576,22 +576,22 @@ EELLL 内ではほとんどのコマンドが禁止されています。
 
 (defun eelll-select-chars (text)
   (let ((ret nil))
-    (mapcar (lambda (c)
-	      (let* ((stroke (eelll-stroke-for-char (char-to-string c)))
-		     (1st (car stroke))
-		     (2nd (car (cdr stroke)))
-		     (lks '(0 1 2 3 4
-			      10 11 12 13 14
-			      20 21 22 23 24
-			      30 31 32 33 34))
-		     (rks '(5 6 7 8 9
-			      15 16 17 18 19
-			      25 26 27 28 29
-			      35 36 37 38 39)))
-		(and (memq 1st (if eelll-first-hand rks lks))
-		     (memq 2nd (if eelll-second-hand rks lks))
-		     (setq ret (cons c ret)))))
-	    (string-to-list text))
+    (mapc (lambda (c)
+	    (let* ((stroke (eelll-stroke-for-char (char-to-string c)))
+		   (1st (car stroke))
+		   (2nd (car (cdr stroke)))
+		   (lks '(0 1 2 3 4
+			    10 11 12 13 14
+			    20 21 22 23 24
+			    30 31 32 33 34))
+		   (rks '(5 6 7 8 9
+			    15 16 17 18 19
+			    25 26 27 28 29
+			    35 36 37 38 39)))
+	      (and (memq 1st (if eelll-first-hand rks lks))
+		   (memq 2nd (if eelll-second-hand rks lks))
+		   (setq ret (cons c ret)))))
+	  (string-to-list text))
     (if ret
 	(mapconcat 'char-to-string ret nil)
       "")))
@@ -838,7 +838,7 @@ Emacs内部のcompletionの実装上の問題のため、「?」を
 	       (insert "\n\n")
 	       (forward-char -1)
 	       (point))))
-    (mapcar 'eelll-put-help-char chars)
+    (mapc 'eelll-put-help-char chars)
     (forward-line)))
 
 ;;;

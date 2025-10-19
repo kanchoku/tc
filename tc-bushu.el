@@ -680,10 +680,10 @@ nilでない場合は多い方が優先される。"
   (let* ((bushu-list (apply 'nconc (mapcar 'tcode-bushu-for-char char-list)))
 	 (r (tcode-bushu-superset bushu-list)))
     (catch 'not-found
-      (mapcar (lambda (c)
-		(unless (setq r (delete c r))
-		  (throw 'not-found nil)))
-	      char-list)
+      (mapc (lambda (c)
+	      (unless (setq r (delete c r))
+		(throw 'not-found nil)))
+	    char-list)
       (sort r 'tcode-bushu-less-p))))
 
 (defun tcode-bushu-less-against-seqence-p (char1 char2)
@@ -704,22 +704,22 @@ nilでない場合は多い方が優先される。"
 (defun tcode-bushu-include-all-chars-bushu-p (char char-list)
   (let* ((bushu (tcode-bushu-for-char char))
 	 (new-bushu bushu))
-    (mapcar (lambda (char)
-	      (setq new-bushu 
-		    (tcode-subtract-set new-bushu
-					(tcode-bushu-for-char char))))
-	    char-list)
+    (mapc (lambda (char)
+	    (setq new-bushu 
+		  (tcode-subtract-set new-bushu
+				      (tcode-bushu-for-char char))))
+	  char-list)
     (setq bushu (tcode-subtract-set bushu new-bushu))
     (catch 'false
-      (mapcar (lambda (char)
-		(or (tcode-subtract-set 
-		     bushu
-		     (apply 'nconc 
-			    (mapcar 
-			     'tcode-bushu-for-char
-			     (tcode-subtract-set char-list (list char)))))
-		    (throw 'false nil)))
-	      char-list)
+      (mapc (lambda (char)
+	      (or (tcode-subtract-set 
+		   bushu
+		   (apply 'nconc 
+			  (mapcar 
+			   'tcode-bushu-for-char
+			   (tcode-subtract-set char-list (list char)))))
+		  (throw 'false nil)))
+	    char-list)
       t)))
 
 (defun tcode-bushu-all-compose-set (char-list &optional bushu-list)
@@ -841,7 +841,7 @@ nilでない場合は多い方が優先される。"
 (defun tcode-bushu-common-set (char-list)
   (let ((bushu-list (tcode-bushu-for-char (car char-list))))
     (catch 'not-found
-      (mapcar
+      (mapc
        (lambda (c)
 	 (unless (setq bushu-list
 		       (tcode-intersection bushu-list
@@ -849,10 +849,10 @@ nilでない場合は多い方が優先される。"
 	   (throw 'not-found nil)))
        (cdr char-list))
       (let ((kouho (tcode-bushu-subset bushu-list)))
-	(mapcar (lambda (c)
-		  (if (memq c kouho)
-		      (setq kouho (delq c kouho))))
-		char-list)
+	(mapc (lambda (c)
+		(if (memq c kouho)
+		    (setq kouho (delq c kouho))))
+	      char-list)
 	(sort kouho 'tcode-bushu-less-or-many-p)))))
 
 (defun tcode-bushu-compose-explicitly (char-list)
@@ -912,7 +912,7 @@ nilでない場合は多い方が優先される。"
   "Compose a character from characters in CHAR-LIST.
 See also `tcode-bushu-functions'."
   (catch 'found
-    (mapcar
+    (mapc
      (lambda (function)
        (let ((r (tcode-bushu-funcall function char-list)))
 	 (if r

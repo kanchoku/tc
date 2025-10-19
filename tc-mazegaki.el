@@ -734,10 +734,10 @@ NOC (候補の数)と CURRENT-OFFSET から現在何番目の表を表示して�
 		  (/ (+ (- noc current-offset) (1- plist-size)) plist-size)))
 	 (whole-table (or (and (catch 'found
 				 ;; 3段目以外を使うことを確かめる。
-				 (mapcar (lambda (e) (if (or (< e 20)
-							(>= e 30))
-						    (throw 'found t)))
-					 tcode-mazegaki-stroke-priority-list)
+				 (mapc (lambda (e) (if (or (< e 20)
+							   (>= e 30))
+						       (throw 'found t)))
+				       tcode-mazegaki-stroke-priority-list)
 				 nil)
 			       (> whole-page 1))
 			  ;; 3段目以外に候補があるか調べる
@@ -1673,7 +1673,7 @@ CONVERSION が nil でないとき、補完後(補完を行った場合のみ)�
 
   (tcode-set-key " " 'tcode-mazegaki-self-insert-or-convert)
 
-  (mapcar
+  (mapc
    (lambda (elm)
      (define-key tcode-mazegaki-map (car elm) (cdr elm)))
    '((" "     . tcode-mazegaki-select-candidate-or-relimit)
