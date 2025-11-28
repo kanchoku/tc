@@ -13,7 +13,7 @@ TUT-code is one of the T-code alternatives.
 
 ## Requirement
 
-Emacs 19以降をサポートします。
+Emacs 26以降をサポートします。
 
 ## install方法
 
