@@ -80,6 +80,8 @@ Emacs 内部関数を置き換える関数を提供するモジュール名。")
  `overwrite' : Emacs 内部関数の書き換えによる実装(従来実装)を用いる。
  `advice'    : advice を使うことにより Emacs 内部関数の書き換えを
                無くした実装を用いる。
+ `im'        : input method による実装を用いる。
+               `tcode-use-input-method' が自動で t となる。
 デフォルト値は `overwrite'。nil にするには、設定ファイル ~/.tc 内で
 セットする。")
 
