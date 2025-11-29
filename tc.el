@@ -746,8 +746,8 @@ t ... cancel"
 	      tcode-display-help-delay tcode-orig-display-help-delay
 	      tcode-input-method-verbose-flag nil)))
   (let ((command (tcode-default-key-binding (char-to-string ch))))
-    (if (or (and (boundp 'overriding-terminal-local-map)
-		 overriding-terminal-local-map)
+    (if (or (and overriding-terminal-local-map
+                (lookup-key overriding-terminal-local-map (vector ch)))
 	    (and (boundp 'overriding-local-map)
 		 overriding-local-map)
 	    (eq this-command 'quoted-insert)
