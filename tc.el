@@ -679,8 +679,32 @@ t ... cancel"
 	tcode-input-filter-functions)
   list)
 
+(defvar tcode-debug nil
+  "nil (デフォルト)の場合、tcode-input-method 内のエラーは condition-case で
+キャッチして捨ててしまう。デバッグ時にエラーの backtrace を取得したい場合は、
+この変数を t にセットする。")
+
 (defun tcode-input-method (ch)
   "The input method function for T-Code."
+    (if tcode-debug
+	(tcode--input-method-core ch)
+      (tcode--input-method-guard ch)))
+
+(defun tcode--input-method-guard (ch)
+  ;; isearch 中に input method がエラーを起こすとユーザーの意図しない
+  ;; モードに入り、修復困難になることがある(isearch の色付けが消えない
+  ;; など)。それを回避。
+  ;;
+  ;; tcode-set-key などで、ユーザー指定の任意のコマンドが input method
+  ;; 内から実行されうるので、エラー発生を前提とする必要がある。
+  (condition-case err
+      (tcode--input-method-core ch)
+    (error
+     (ding)
+     (minibuffer-message "Error in input method: %S" err)
+     nil)))
+
+(defun tcode--input-method-core (ch)
   (setq last-command 'self-insert-command
 	last-command-event ch)
   (if input-method-verbose-flag
