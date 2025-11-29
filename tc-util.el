@@ -276,7 +276,7 @@ Tコードモードのときに、このリストのコマンドが呼ばれた�
   "この文字列中のどの文字の後にも直後に空白を挿入しない。")
 
 ;;; 交ぜ書き変換が用意されていない場合は、self-insert しか行わない。
-(or (boundp 'tcode-mazegaki-self-insert-or-convert)
+(or (fboundp 'tcode-mazegaki-self-insert-or-convert)
     (defun tcode-mazegaki-self-insert-or-convert (arg)
       (interactive "*p")
       (self-insert-command arg)))
