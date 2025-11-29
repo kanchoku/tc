@@ -21,6 +21,8 @@
 
 ;;; Code:
 
+(eval-when-compile
+  (require 'cl-macs))  ; for cl-callf used in isearch-define-mode-toggle
 (require 'tc-iscommon)
 
 ;;;
@@ -81,6 +83,43 @@
 (defalias 'tcode-isearch-make-string-for-wrapping #'identity)
 
 ;;;
+;;; wrapped-search
+;;;
+
+(defun tcode--wrapped-search-regexp (string &optional lax)
+  "STRING または、STRING の日本語文字の前に行折り返しなどの空白が挟ま
+れた文字列にマッチする正規表現を返す。"
+  (mapconcat (lambda (ch)
+	       (let ((s-ch (char-to-string ch)))
+		 (cond ((= (char-width ch) 2)
+			(concat tcode-isearch-ignore-regexp s-ch))
+		       (t
+			(regexp-quote s-ch)))))
+	     (string-to-list string)
+	     nil))
+
+(defun tcode--define-toggle-wrap ()
+  "isearch-toggle-wrap を定義する。"
+  (let ((orig-binding (lookup-key isearch-mode-map (kbd "M-s @"))))
+    ;; isearch-toggle-wrap が定義されることをバイトコンパイラに知らせ
+    ;; るために eval-and-compile が必要。
+    (eval-and-compile
+      ;; isearch 内のコマンド isearch-toggle-wrap を作り、"M-s @" にバイ
+      ;; ンドする。キーバインドは特に必要ないが、このマクロの仕様上スキッ
+      ;; プできない。一時的にバインドしてすぐに元に戻す。
+      (isearch-define-mode-toggle wrap "@" tcode--wrapped-search-regexp
+	"Turning on wrap search turns off regexp mode."))
+    (define-key isearch-mode-map (kbd "M-s @") orig-binding)))
+
+(defun tcode--wrapped-search-init-state ()
+  "isearch 開始時、必要に応じて wrapped-search を有効にする。"
+  (when (and isearch-mode
+	     tcode-isearch-enable-wrapped-search
+	     (not isearch-regexp)            ; regexp search でないとき
+	     (null isearch-regexp-function)) ; word/symbol search でないとき
+    (isearch-toggle-wrap)))
+
+;;;
 ;;; 初期化
 ;;;
 
@@ -88,9 +127,11 @@
 
 (defun tcode--ishelper-init ()
   "tc-ishelper.el のロード時に初期化を行なう。"
+  (tcode--define-toggle-wrap)
   (when (eq tcode-use-isearch 'advice)
     (advice-add 'isearch-printing-char :around #'tcode--isearch-printing-char))
-  (add-hook 'isearch-mode-hook #'tcode-isearch-init))
+  (add-hook 'isearch-mode-hook #'tcode-isearch-init)
+  (add-hook 'isearch-mode-hook #'tcode--wrapped-search-init-state))
 
 (tcode--ishelper-init)
 (provide 'tc-ishelper)
