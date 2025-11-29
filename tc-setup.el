@@ -77,7 +77,7 @@
 	   tcode-use-as-default-input-method)
       (progn
 	(require 'tc-sysdep)
-	(require tcode-isearch-type)))
+	(require tcode-isearch-overwrite-module)))
   ;; autoload
   (autoload 'tcode-use-package "tc")
   (autoload 'tcode-activate "tc")

@@ -45,8 +45,8 @@
   "日本語Emacsのタイプ。
 mule-1, mule-2, mule-3, mule-4, xemacsのいずれか。")
 
-(defconst tcode-isearch-type 'tc-is22
-  "isearchで用いるTコード用モジュールのタイプ。")
+(defconst tcode-isearch-overwrite-module 'tc-is22
+  "isearch 拡張のために Emacs 内部関数を置き換える関数を提供するモジュール名。")
 
 (defmacro tcode-xemacs-p ()
   (list 'eq 'tcode-emacs-version (list 'quote 'xemacs)))
