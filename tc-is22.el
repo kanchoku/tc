@@ -31,15 +31,12 @@
 ;;;
 ;;;  User Variables
 ;;;
-(defvar tcode-isearch-start-state nil
+(defvar-local tcode-isearch-start-state nil
   "*インクリメンタルサーチ開始時のTコードモードを指定する。
-       nil: バッファのTコードモードに同期(デフォールト)。
-       t:   バッファのTコードモードと独立。開始時はバッファと同じ。
-       0:   バッファと独立に常に非Tコードモードサーチから開始。
-       1:   バッファと独立に常にTコードモードサーチから開始。
+       nil: バッファのTコードモードを引き継ぐ(デフォルト)。
+       0:   開始時、Tコードモードをオフにする。
+       1:   開始時、Tコードモードをオンにする。
 バッファローカル変数。")
-(make-variable-buffer-local 'tcode-isearch-start-state)
-(setq-default tcode-isearch-start-state nil)
 
 (defcustom tcode-isearch-enable-wrapped-search t
   "*2バイト文字でサーチするときに、空白や改行を無視する。"
@@ -386,13 +383,16 @@ STR から `tcode-isearch-ignore-regexp' を取り除く。"
       (tcode-isearch-start-bushu)
     (tcode-isearch-postfix-bushu)))
 
+(defun tcode-isearch-set-im-mode (enable)
+  "isearch 中に、input method の有効化/無効化を行う。"
+  (when (or (and enable (null current-input-method))
+	    (and (not enable) current-input-method))
+    (isearch-toggle-input-method)))
+
 (defun tcode-isearch-init ()
-  "Tコードモードインクリメンタルサーチの初期化を行う。"
-  (setq tcode-mode (if (numberp tcode-isearch-start-state)
-		       (if (zerop tcode-isearch-start-state) nil t)
-		     (and (boundp 'tcode-mode)
-			  tcode-mode)))
-  (isearch-update))
+  "isearch 開始時、input method の状態をセットする。"
+  (when (numberp tcode-isearch-start-state)
+    (tcode-isearch-set-im-mode (not (zerop tcode-isearch-start-state)))))
 
 (add-hook 'isearch-mode-hook 'tcode-isearch-init)
 
