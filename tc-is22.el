@@ -61,13 +61,6 @@
   :group 'tcode)
 
 ;;;
-;;; Default key binding
-;;;
-(when (eq tcode-emacs-version 'xemacs)
-  (define-key isearch-mode-map "\C-\\" 'isearch-toggle-tcode)
-  (put 'isearch-toggle-tcode 'isearch-command t)) ; for XEmacs
-
-;;;
 ;;; patch to original functions in isearch.el of Emacs 22
 ;;;
 
@@ -276,13 +269,6 @@
       (unless normal-end
 	(setq isearch-cmds orig-isearch-cmds)
 	(tcode-isearch-top-state)))))
-
-(defun isearch-toggle-tcode ()
-  "インクリメンタルサーチ中のTコードモードをトグルする。"
-  (interactive)
-  (unless tcode-isearch-start-state
-    (toggle-input-method))
-  (isearch-update))
 
 (defun tcode-isearch-bushu-henkan (c1 c2)
   ;; インクリメンタルサーチ中に C1 と C2 とで部首合成変換する。
