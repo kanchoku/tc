@@ -663,8 +663,9 @@ t ... cancel"
 	 (if (commandp action)
 	     (progn
 	       ;; コマンドの実行
-	       (setq prefix-arg current-prefix-arg
-		     this-command action)
+	       (unless tcode-use-input-method
+		 (setq prefix-arg current-prefix-arg))
+	       (setq this-command action)
 	       (command-execute action))
 	   ;; コマンドでない関数の実行
 	   (funcall action)
