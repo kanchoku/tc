@@ -31,7 +31,7 @@
        (file-exists-p tcode-init-file-name)
        (progn
 	 (require 'tc-sysdep)
-	 (setq tcode-use-isearch t
+	 (setq tcode-use-isearch 'overwrite
 	       tcode-use-as-default-input-method t)
 	 (load tcode-init-file-name)))
   ;; map toggle-input-method to `C-\'
