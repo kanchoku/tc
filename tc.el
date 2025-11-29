@@ -330,6 +330,13 @@ nil のときは `tcode-mode' から得る。")
 
 (defvar tcode-katakana-mode nil "現在カタカナモードかどうか")
 (make-variable-buffer-local 'tcode-katakana-mode)
+
+(defvar tcode--mode-vars '(tcode-kuten
+			   tcode-touten
+			   tcode-alnum-2-byte
+			   tcode-katakana-mode
+			   tcode-current-switch-table)
+  "モードを保持する buffer local 変数。")
 
 ;;
 ;; キー配置・キーマップの設定
@@ -697,6 +704,9 @@ t ... cancel"
 		  (tcode--input-method-guard ch))))
     (or events
 	(when tcode-use-input-method
+	  (when tcode--in-minibuffer-for-conversion-flag
+	    ;; events が空なので文字入力ではない。モード変更かもしれない。
+            (tcode--writeback-mode-vars tcode--isearch-orig-buf))
 	  ;; input method が nil を返すと、(read-event) やキーボードマク
 	  ;; ロが終了しない。
 	  '(tcode-ignore)))))
@@ -810,6 +820,10 @@ t ... cancel"
 ;;  5. minibuffer 文字列の追加部分だけがサーチ文字列に足される。(その
 ;;     手前部分を tcode-input-method が変更しても無視される。)
 ;;
+;; 2.より、tcode-input-method 内でバッファローカル変数を参照しても、新
+;; しく作られた minibuffer の値を参照してしまう。句読点や全角/半角英数
+;; モードの設定はバッファローカルなので、事前にコピーしておく必要がある。
+;;
 ;; 後置変換によって minibuffer 文字列が書き換えられても、4.5.の理由で、
 ;; 2.の時点では、その結果をサーチ文字列に反映させることも、マッチ位置
 ;; にpoint を移動させることもできない。この処理を post-command-hook で
@@ -839,12 +853,38 @@ nil の場合は常に nil。")
 	  (search-msg-before (minibuffer-contents))
 	  (orig-buf (window-buffer (minibuffer-selected-window)))
 	  search-msg-after events)
+      (tcode--fetch-mode-vars orig-buf)
       (setq events (tcode--input-method-core ch))
+      (tcode--writeback-mode-vars orig-buf)
       (setq search-msg-after (minibuffer-contents))
       (when (not (string-prefix-p search-msg-before search-msg-after))
 	;; サーチ文字列に追加以外の変更があった。後で反映。
 	(tcode--call-later #'tcode--isearch-update search-msg-after))
       events)))
+
+(defun tcode--copy-local-vars (from-buf to-buf vars)
+  "FROM-BUF のバッファローカル変数を TO-BUF にコピーする。
+VARS はコピーする変数のリスト。TO-BUF 側の値に変化があれば t、
+なければ nil を返す。"
+  (let ((changed nil))
+    (with-current-buffer to-buf
+      (dolist (var vars)
+	(let ((old-val (symbol-value var))
+	      (new-val (buffer-local-value var from-buf)))
+	  (unless (eql new-val old-val)
+	    (setq changed t)
+	    (set var new-val)))))
+    changed))
+
+(defun tcode--fetch-mode-vars (buffer)
+  "BUFFER のモード状態をカレントバッファにコピーする。"
+  (tcode--copy-local-vars buffer (current-buffer) tcode--mode-vars))
+
+(defun tcode--writeback-mode-vars (buffer)
+  "カレントバッファのモード状態を BUFFER にコピーする。"
+  (when (tcode--copy-local-vars (current-buffer) buffer tcode--mode-vars)
+    (with-current-buffer buffer
+      (tcode-mode-line-redisplay))))
 
 (defvar tcode--call-later-queue nil
   "tcode--call-laterによって実行を予約された関数と引数のキュー。")
@@ -912,6 +952,7 @@ nil の場合は常に nil。")
       (tcode--isearch-append (substring new-str 1)))))
 
 (defun tcode--minibuffer-setup ()
+  (tcode--fetch-mode-vars tcode--isearch-orig-buf)
   (setq-local tcode--in-minibuffer-for-conversion-flag t))
 
 (defun tcode--finish-conversion ()
