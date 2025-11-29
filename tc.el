@@ -727,8 +727,7 @@ t ... cancel"
      nil)))
 
 (defun tcode--input-method-core (ch)
-  (setq last-command 'self-insert-command
-	last-command-event ch)
+  (setq last-command-event ch)
   (if input-method-verbose-flag
       (unless tcode-input-method-verbose-flag
 	;; push some variables' values
