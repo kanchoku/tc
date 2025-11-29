@@ -686,9 +686,15 @@ t ... cancel"
 
 (defun tcode-input-method (ch)
   "The input method function for T-Code."
-    (if tcode-debug
-	(tcode--input-method-core ch)
-      (tcode--input-method-guard ch)))
+  (let ((events (if tcode-debug
+		    (tcode--input-method-core ch)
+		  (tcode--input-method-guard ch))))
+    (or events
+	(when tcode-use-input-method
+	  ;; input method が nil を返すと、(read-event) やキーボードマク
+	  ;; ロが終了しない。
+	  '(tcode-ignore)))))
+(global-set-key [tcode-ignore] 'ignore)
 
 (defun tcode--input-method-guard (ch)
   ;; isearch 中に input method がエラーを起こすとユーザーの意図しない
