@@ -684,6 +684,12 @@ t ... cancel"
 キャッチして捨ててしまう。デバッグ時にエラーの backtrace を取得したい場合は、
 この変数を t にセットする。")
 
+(defvar tcode--in-minibuffer-for-conversion-flag nil
+  "isearch 中の前置変換のための minibuffer にいる。")
+
+(defvar tcode--isearch-orig-buf nil
+  "isearch を開始したバッファ。")
+
 (defun tcode-input-method (ch)
   "The input method function for T-Code."
   (let ((events (if tcode-debug
@@ -808,6 +814,13 @@ t ... cancel"
 ;; 2.の時点では、その結果をサーチ文字列に反映させることも、マッチ位置
 ;; にpoint を移動させることもできない。この処理を post-command-hook で
 ;; 行なうことで、後置変換を実現する。
+;;
+;; 前置変換では変換開始位置のバッファローカル変数への記録、文字への下
+;; 線付けが行なわれ、それを複数文字の編集にわたって記憶しておく必要が
+;; ある。isearch-x.el の用意する minibuffer は1文字ごとに終了するので、
+;; それをそのまま用いることはできない。post-command-hookを用いて
+;; minibuffer の終了を待った上で、新たな minibuffer を用意し、その中で
+;; 前置変換を行なう。
 
 (defvar tcode--in-isearch-flag nil
   "isearch 中かどうか。正確には、isearch 時に用いられる特殊な
@@ -861,6 +874,57 @@ nil の場合は常に nil。")
   (dolist (ch (string-to-list str))
     (let ((s-ch (char-to-string ch)))
       (isearch-process-search-string s-ch s-ch))))
+
+(defun tcode--start-prefix-conversion (fun)
+  "前置変換の開始関数を呼ぶ。isearch 中の場合 minibuffer 内で呼ぶ。"
+  (if tcode--in-minibuffer-for-conversion-flag
+      (minibuffer-message "isearch 中の前置変換はネストできません。")
+    (if tcode--in-isearch-flag
+	(tcode--with-minibuffer fun)
+      (funcall fun))))
+
+(defun tcode--with-minibuffer (fun)
+  "isearch 中の前置変換のための minibuffer を用意する。"
+  ;; isearch からの input method の呼び出しに minibuffer を使っている
+  ;; ので、それが終わってから。
+  (tcode--call-later #'tcode--with-minibuffer-deferred fun))
+
+(defun tcode--with-minibuffer-deferred (fun)
+  (let ((old-msg isearch-message)
+	(old-str isearch-string)
+	new-str)
+    (setq tcode--isearch-orig-buf (current-buffer))
+    ;; minibuffer 使用中にバッファを移動して isearch を使用しても、状
+    ;; 態が壊れないようにする。isearch-edit-string にならった。
+    (with-isearch-suspended
+     (minibuffer-with-setup-hook fun	; second
+       (minibuffer-with-setup-hook #'tcode--minibuffer-setup ; first
+	 (setq new-str (read-string (concat "Isearch read: " old-msg)
+				    nil nil nil t))
+	 (when (> (length new-str) 0)
+	   ;; 先頭文字だけサーチ文字列に追加
+	   (let ((ch (substring new-str 0 1)))
+	     ;; 部首/交ぜ書き変換でコントロール文字は扱わないとの仮定のもと、
+	     ;; string と message は同じ。
+	     (setq isearch-new-string  (concat old-str ch))
+	     (setq isearch-new-message (concat old-msg ch)))))))
+    (when (> (length new-str) 1)
+      (tcode--isearch-append (substring new-str 1)))))
+
+(defun tcode--minibuffer-setup ()
+  (setq-local tcode--in-minibuffer-for-conversion-flag t))
+
+(defun tcode--finish-conversion ()
+  "isearch 内前置変換の終了処理。必要なら minibuffer から出る。"
+  (when tcode--in-minibuffer-for-conversion-flag
+    ;; exit-minibuffer は大域脱出なので、呼び出し側関数が全て終ってから。
+    (tcode--call-later #'tcode--finish-conversion-deferred)))
+
+(defun tcode--finish-conversion-deferred ()
+  ;; tcode--finish-conversion が複数回呼ばれてもよいよう、minibuffer
+  ;; 内にいることを確認する。
+  (when tcode--in-minibuffer-for-conversion-flag
+    (exit-minibuffer)))
 
 ;;
 ;; 2バイト英数字
