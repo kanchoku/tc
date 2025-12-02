@@ -23,6 +23,26 @@
 ;;; Code:
 
 (require 'tc-pre)
+(defvar tcode-use-input-method)
+
+(defun tcode--load-isearch ()
+  "`tcode-use-isearch' の設定に応じて必要なファイルをロードする。"
+  (tcode--ensure-valid-value 'tcode-use-isearch '(overwrite advice im nil)
+			     'overwrite)
+  (cond ((eq tcode-use-isearch 'overwrite)
+         (require 'tc-sysdep)
+         (require tcode-isearch-overwrite-module))
+        (tcode-use-isearch
+         (require 'tc-ishelper))))
+
+(defun tcode--ensure-valid-value (var vals fallback)
+  "VAR の値が VALS に無ければ、警告を出した上で値を FALLBACK に変える。"
+  (let ((val (symbol-value var)))
+    (unless (member val vals)
+      (lwarn 'tcode :warning
+             "Invalid value `%s' for `%s'; falling back to `%s'."
+             val var fallback)
+      (set var fallback))))
 
 (if (featurep 'tc-setup)
     ()
@@ -31,8 +51,10 @@
        (file-exists-p tcode-init-file-name)
        (progn
 	 (require 'tc-sysdep)
-	 (setq tcode-use-isearch t
-	       tcode-use-as-default-input-method t)
+	 ;; .tc を用意しているユーザーへの default 値。
+	 ;; nil に設定したい場合は、.tc でセットする必要がある。
+	 (setq tcode-use-isearch (or tcode-use-isearch 'overwrite))
+	 (setq tcode-use-as-default-input-method t)
 	 (load tcode-init-file-name)))
   ;; map toggle-input-method to `C-\'
   (if (or (memq tcode-emacs-version '(mule-1 mule-2))
@@ -73,11 +95,10 @@
 	(setq-default default-input-method tcode-default-input-method)
 	(setq default-input-method tcode-default-input-method)))
   ;; isearch
-  (if (and tcode-use-isearch
-	   tcode-use-as-default-input-method)
-      (progn
-	(require 'tc-sysdep)
-	(require tcode-isearch-type)))
+  (when (eq tcode-use-isearch 'im)
+    (setq tcode-use-input-method t))
+  (when tcode-use-as-default-input-method
+    (tcode--load-isearch))
   ;; autoload
   (autoload 'tcode-use-package "tc")
   (autoload 'tcode-activate "tc")

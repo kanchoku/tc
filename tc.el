@@ -330,6 +330,13 @@ nil のときは `tcode-mode' から得る。")
 
 (defvar tcode-katakana-mode nil "現在カタカナモードかどうか")
 (make-variable-buffer-local 'tcode-katakana-mode)
+
+(defvar tcode--mode-vars '(tcode-kuten
+			   tcode-touten
+			   tcode-alnum-2-byte
+			   tcode-katakana-mode
+			   tcode-current-switch-table)
+  "モードを保持する buffer local 変数。")
 
 ;;
 ;; キー配置・キーマップの設定
@@ -656,8 +663,9 @@ t ... cancel"
 	 (if (commandp action)
 	     (progn
 	       ;; コマンドの実行
-	       (setq prefix-arg current-prefix-arg
-		     this-command action)
+	       (unless tcode-use-input-method
+		 (setq prefix-arg current-prefix-arg))
+	       (setq this-command action)
 	       (command-execute action))
 	   ;; コマンドでない関数の実行
 	   (funcall action)
@@ -679,10 +687,48 @@ t ... cancel"
 	tcode-input-filter-functions)
   list)
 
+(defvar tcode-debug nil
+  "nil (デフォルト)の場合、tcode-input-method 内のエラーは condition-case で
+キャッチして捨ててしまう。デバッグ時にエラーの backtrace を取得したい場合は、
+この変数を t にセットする。")
+
+(defvar tcode--in-minibuffer-for-conversion-flag nil
+  "isearch 中の前置変換のための minibuffer にいる。")
+
+(defvar tcode--isearch-orig-buf nil
+  "isearch を開始したバッファ。")
+
 (defun tcode-input-method (ch)
   "The input method function for T-Code."
-  (setq last-command 'self-insert-command
-	last-command-event ch)
+  (let ((events (if tcode-debug
+		    (tcode--input-method-isearch-wrap ch)
+		  (tcode--input-method-guard ch))))
+    (or events
+	(when tcode-use-input-method
+	  (when tcode--in-minibuffer-for-conversion-flag
+	    ;; events が空なので文字入力ではない。モード変更かもしれない。
+            (tcode--writeback-mode-vars tcode--isearch-orig-buf))
+	  ;; input method が nil を返すと、(read-event) やキーボードマク
+	  ;; ロが終了しない。
+	  '(tcode-ignore)))))
+(global-set-key [tcode-ignore] 'ignore)
+
+(defun tcode--input-method-guard (ch)
+  ;; isearch 中に input method がエラーを起こすとユーザーの意図しない
+  ;; モードに入り、修復困難になることがある(isearch の色付けが消えない
+  ;; など)。それを回避。
+  ;;
+  ;; tcode-set-key などで、ユーザー指定の任意のコマンドが input method
+  ;; 内から実行されうるので、エラー発生を前提とする必要がある。
+  (condition-case err
+      (tcode--input-method-isearch-wrap ch)
+    (error
+     (ding)
+     (minibuffer-message "Error in input method: %S" err)
+     nil)))
+
+(defun tcode--input-method-core (ch)
+  (setq last-command-event ch)
   (if input-method-verbose-flag
       (unless tcode-input-method-verbose-flag
 	;; push some variables' values
@@ -701,8 +747,8 @@ t ... cancel"
 	      tcode-display-help-delay tcode-orig-display-help-delay
 	      tcode-input-method-verbose-flag nil)))
   (let ((command (tcode-default-key-binding (char-to-string ch))))
-    (if (or (and (boundp 'overriding-terminal-local-map)
-		 overriding-terminal-local-map)
+    (if (or (and overriding-terminal-local-map
+                (lookup-key overriding-terminal-local-map (vector ch)))
 	    (and (boundp 'overriding-local-map)
 		 overriding-local-map)
 	    (eq this-command 'quoted-insert)
@@ -752,6 +798,174 @@ t ... cancel"
 	(funcall self-insert-after-hook p (point)))
     (tcode-do-auto-fill)
     (run-hooks 'input-method-after-insert-chunk-hook)))
+
+;;
+;; tcode-use-input-method 有効時の isearch サポート
+;;
+
+;; tcode-use-input-method が非 nil の場合、isearch 中に
+;; tcode-input-method の呼び出しが行なわれる。この呼び出しは、次のよう
+;; に行なわれる。(emacs 本体の isearch-x.el で定義される
+;; isearch-process-search-multibyte-characters と
+;; isearch-with-input-method 参照。)
+;;
+;; (ユーザーが isearch 中に文字キーを打つと、)
+;;  1. これまでのサーチ文字列が minibuffer に書かれる。
+;;  2. minibuffer 内で tcode-input-method が入力文字を引数として呼ばれる。
+;;  3. tcode-input-method が文字のリストを返すと、それが minibuffer
+;;     に追加され、すぐに minibuffer は終了する。
+;;  4. この時点で、minibuffer 内で設定したバッファローカル変数は忘れて
+;;     しまう。また、tcode-input-method 内で isearch 対象バッファの
+;;     point 位置を変更しても、元の位置に戻ってしまう。
+;;  5. minibuffer 文字列の追加部分だけがサーチ文字列に足される。(その
+;;     手前部分を tcode-input-method が変更しても無視される。)
+;;
+;; 2.より、tcode-input-method 内でバッファローカル変数を参照しても、新
+;; しく作られた minibuffer の値を参照してしまう。句読点や全角/半角英数
+;; モードの設定はバッファローカルなので、事前にコピーしておく必要がある。
+;;
+;; 後置変換によって minibuffer 文字列が書き換えられても、4.5.の理由で、
+;; 2.の時点では、その結果をサーチ文字列に反映させることも、マッチ位置
+;; にpoint を移動させることもできない。この処理を post-command-hook で
+;; 行なうことで、後置変換を実現する。
+;;
+;; 前置変換では変換開始位置のバッファローカル変数への記録、文字への下
+;; 線付けが行なわれ、それを複数文字の編集にわたって記憶しておく必要が
+;; ある。isearch-x.el の用意する minibuffer は1文字ごとに終了するので、
+;; それをそのまま用いることはできない。post-command-hookを用いて
+;; minibuffer の終了を待った上で、新たな minibuffer を用意し、その中で
+;; 前置変換を行なう。
+
+(defvar tcode--in-isearch-flag nil
+  "isearch 中かどうか。正確には、isearch 時に用いられる特殊な
+minibuffer から呼び出されているかどうか。tcode-use-input-method が
+nil の場合は常に nil。")
+
+(defun tcode--input-method-isearch-wrap (ch)
+  "tcode-input-method に対し、isearch 中の処理を追加するラッパー"
+  ;; isearch-with-input-method は isearch-x.el 内で定義されたコマンド。
+  ;; minibuffer 内で起動され、tcode-input-method を呼び出す。
+  (if (not (eq this-command 'isearch-with-input-method))
+      ;; isearch 中でない、または、tcode-use-input-method が nil。
+      (tcode--input-method-core ch)
+    ;; isearch 中。
+    (let ((tcode--in-isearch-flag t)
+	  (search-msg-before (minibuffer-contents))
+	  (orig-buf (window-buffer (minibuffer-selected-window)))
+	  search-msg-after events)
+      (tcode--fetch-mode-vars orig-buf)
+      (setq events (tcode--input-method-core ch))
+      (tcode--writeback-mode-vars orig-buf)
+      (setq search-msg-after (minibuffer-contents))
+      (when (not (string-prefix-p search-msg-before search-msg-after))
+	;; サーチ文字列に追加以外の変更があった。後で反映。
+	(tcode--call-later #'tcode--isearch-update search-msg-after))
+      events)))
+
+(defun tcode--copy-local-vars (from-buf to-buf vars)
+  "FROM-BUF のバッファローカル変数を TO-BUF にコピーする。
+VARS はコピーする変数のリスト。TO-BUF 側の値に変化があれば t、
+なければ nil を返す。"
+  (let ((changed nil))
+    (with-current-buffer to-buf
+      (dolist (var vars)
+	(let ((old-val (symbol-value var))
+	      (new-val (buffer-local-value var from-buf)))
+	  (unless (eql new-val old-val)
+	    (setq changed t)
+	    (set var new-val)))))
+    changed))
+
+(defun tcode--fetch-mode-vars (buffer)
+  "BUFFER のモード状態をカレントバッファにコピーする。"
+  (tcode--copy-local-vars buffer (current-buffer) tcode--mode-vars))
+
+(defun tcode--writeback-mode-vars (buffer)
+  "カレントバッファのモード状態を BUFFER にコピーする。"
+  (when (tcode--copy-local-vars (current-buffer) buffer tcode--mode-vars)
+    (with-current-buffer buffer
+      (tcode-mode-line-redisplay))))
+
+(defvar tcode--call-later-queue nil
+  "tcode--call-laterによって実行を予約された関数と引数のキュー。")
+
+(defun tcode--call-later (&rest fun-args)
+  "現在実行中のコマンド終了後に関数呼び出しを行なう。"
+  (push fun-args tcode--call-later-queue)
+  (add-hook 'post-command-hook #'tcode--call-later-worker))
+
+(defun tcode--call-later-worker ()
+  (setq tcode--call-later-queue (nreverse tcode--call-later-queue))
+  (while tcode--call-later-queue
+    (let* ((fun-args (pop tcode--call-later-queue))
+	   (fun (car fun-args))
+	   (args (cdr fun-args)))
+      (apply fun args))))
+
+(defun tcode--isearch-update (msg-after)
+  "tcode-input-method が行なったサーチ文字列の修正を実際に反映する。"
+  (while (not (string-prefix-p isearch-message msg-after))
+    (isearch-delete-char))
+  (tcode--isearch-append (substring msg-after (length isearch-message))))
+
+(defun tcode--isearch-append (str)
+  "サーチ文字列に STR を追加する。"
+  ;; 1文字ずつ消せるよう、1文字ずつサーチ文字列に加える。
+  (dolist (ch (string-to-list str))
+    (let ((s-ch (char-to-string ch)))
+      (isearch-process-search-string s-ch s-ch))))
+
+(defun tcode--start-prefix-conversion (fun)
+  "前置変換の開始関数を呼ぶ。isearch 中の場合 minibuffer 内で呼ぶ。"
+  (if tcode--in-minibuffer-for-conversion-flag
+      (minibuffer-message "isearch 中の前置変換はネストできません。")
+    (if tcode--in-isearch-flag
+	(tcode--with-minibuffer fun)
+      (funcall fun))))
+
+(defun tcode--with-minibuffer (fun)
+  "isearch 中の前置変換のための minibuffer を用意する。"
+  ;; isearch からの input method の呼び出しに minibuffer を使っている
+  ;; ので、それが終わってから。
+  (tcode--call-later #'tcode--with-minibuffer-deferred fun))
+
+(defun tcode--with-minibuffer-deferred (fun)
+  (let ((old-msg isearch-message)
+	(old-str isearch-string)
+	new-str)
+    (setq tcode--isearch-orig-buf (current-buffer))
+    ;; minibuffer 使用中にバッファを移動して isearch を使用しても、状
+    ;; 態が壊れないようにする。isearch-edit-string にならった。
+    (with-isearch-suspended
+     (minibuffer-with-setup-hook fun	; second
+       (minibuffer-with-setup-hook #'tcode--minibuffer-setup ; first
+	 (setq new-str (read-string (concat "Isearch read: " old-msg)
+				    nil nil nil t))
+	 (when (> (length new-str) 0)
+	   ;; 先頭文字だけサーチ文字列に追加
+	   (let ((ch (substring new-str 0 1)))
+	     ;; 部首/交ぜ書き変換でコントロール文字は扱わないとの仮定のもと、
+	     ;; string と message は同じ。
+	     (setq isearch-new-string  (concat old-str ch))
+	     (setq isearch-new-message (concat old-msg ch)))))))
+    (when (> (length new-str) 1)
+      (tcode--isearch-append (substring new-str 1)))))
+
+(defun tcode--minibuffer-setup ()
+  (tcode--fetch-mode-vars tcode--isearch-orig-buf)
+  (setq-local tcode--in-minibuffer-for-conversion-flag t))
+
+(defun tcode--finish-conversion ()
+  "isearch 内前置変換の終了処理。必要なら minibuffer から出る。"
+  (when tcode--in-minibuffer-for-conversion-flag
+    ;; exit-minibuffer は大域脱出なので、呼び出し側関数が全て終ってから。
+    (tcode--call-later #'tcode--finish-conversion-deferred)))
+
+(defun tcode--finish-conversion-deferred ()
+  ;; tcode--finish-conversion が複数回呼ばれてもよいよう、minibuffer
+  ;; 内にいることを確認する。
+  (when tcode--in-minibuffer-for-conversion-flag
+    (exit-minibuffer)))
 
 ;;
 ;; 2バイト英数字
@@ -1074,8 +1288,7 @@ Emacsが起動されてから最初のtcode-modeで実行される。
 	   (not (file-exists-p tcode-data-directory)))
       (error "`tcode-data-directory'(%s)が存在しません。"
 	     tcode-data-directory))
-  (if tcode-use-isearch
-      (require tcode-isearch-type))
+  (tcode--load-isearch)
   (add-hook 'minibuffer-exit-hook 'tcode-exit-minibuffer)
   (when (and (fboundp 'inactivate-input-method)
 	     (fboundp 'defadvice))

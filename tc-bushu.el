@@ -1055,6 +1055,12 @@ See also `tcode-bushu-functions'."
 
 (defun tcode-bushu-put-prefix ()
   "前置型部首合成変換の開始地点として印を付ける。"
+  (if tcode-bushu-prefix-list ; すでに部首変換中
+      ;; 部首-部首のネストは可
+      (tcode-bushu-put-prefix-core)
+    (tcode--start-prefix-conversion #'tcode-bushu-put-prefix-core)))
+
+(defun tcode-bushu-put-prefix-core ()
   (tcode-bushu-init 2)
   (unless (get-buffer tcode-bushu-expand-buffer-name)
     (error "Bushu dictionary not ready."))
@@ -1073,7 +1079,9 @@ See also `tcode-bushu-functions'."
       (save-excursion
 	(goto-char p)
 	(when (looking-at "▲")
-	  (delete-char 1))))))
+	  (delete-char 1)))))
+  (when (null tcode-bushu-prefix-list) ; ネストも含めて変換完了
+    (tcode--finish-conversion)))
 
 (defun tcode-bushu-clear-prefix ()
   "前置型部首合成変換用の印をすべて削除する。"
