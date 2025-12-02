@@ -45,8 +45,9 @@
   "日本語Emacsのタイプ。
 mule-1, mule-2, mule-3, mule-4, xemacsのいずれか。")
 
-(defconst tcode-isearch-type 'tc-is22
-  "isearchで用いるTコード用モジュールのタイプ。")
+(defconst tcode-isearch-overwrite-module 'tc-is22
+  "`tcode-use-isearch' が `overwrite' のとき、isearch 拡張のために
+Emacs 内部関数を置き換える関数を提供するモジュール名。")
 
 (defmacro tcode-xemacs-p ()
   (list 'eq 'tcode-emacs-version (list 'quote 'xemacs)))
@@ -72,7 +73,15 @@ mule-1, mule-2, mule-3, mule-4, xemacsのいずれか。")
 設定しなければならない。")
 
 (defvar tcode-use-isearch nil
-  "nil でないとき、Tコードを使用できるようにisearchを拡張する。")
+  "nil でないとき、Tコードを使用できるように isearch を拡張する。
+
+次のシンボルのいずれかを指定する。
+ nil         : isearch 中にTコードを使用しない。
+ `overwrite' : Emacs 内部関数の書き換えによる実装(従来実装)を用いる。
+ `advice'    : advice を使うことにより Emacs 内部関数の書き換えを
+               無くした実装を用いる。
+デフォルト値は `overwrite'。nil にするには、設定ファイル ~/.tc 内で
+セットする。")
 
 (defvar tcode-use-as-default-input-method nil
   "nil でないとき、Tコードをデフォールトのinput methodにする。")

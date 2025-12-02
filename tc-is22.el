@@ -25,47 +25,10 @@
 
 ;;; Code:
 
+(require 'tc-iscommon)
+
 (if (< (string-to-number emacs-version) 22)
     (error "tc-is22 cannot run on NEmacs/Mule/Emacs20/21.  Use Emacs 22 or later!"))
-
-;;;
-;;;  User Variables
-;;;
-(defvar tcode-isearch-start-state nil
-  "*インクリメンタルサーチ開始時のTコードモードを指定する。
-       nil: バッファのTコードモードに同期(デフォールト)。
-       t:   バッファのTコードモードと独立。開始時はバッファと同じ。
-       0:   バッファと独立に常に非Tコードモードサーチから開始。
-       1:   バッファと独立に常にTコードモードサーチから開始。
-バッファローカル変数。")
-(make-variable-buffer-local 'tcode-isearch-start-state)
-(setq-default tcode-isearch-start-state nil)
-
-(defcustom tcode-isearch-enable-wrapped-search t
-  "*2バイト文字でサーチするときに、空白や改行を無視する。"
-  :type 'boolean :group 'tcode)
-
-(defcustom tcode-isearch-ignore-regexp "[\n \t]*"
-  "* 2バイト文字間に入る正規表現。
-`tcode-isearch-enable-wrapped-search' が t のときのみ有効。"
-  :type 'regexp :group 'tcode)
-
-(defcustom tcode-isearch-special-function-alist
-  '((tcode-bushu-begin-conversion . tcode-isearch-bushu-conversion-command)
-    (tcode-bushu-begin-alternate-conversion
-     . tcode-isearch-bushu-alternate-conversion-command)
-    (tcode-mazegaki-begin-alternate-conversion . tcode-isearch-prefix-mazegaki)
-    (tcode-mazegaki-begin-conversion . tcode-isearch-postfix-mazegaki)
-    (tcode-toggle-alnum-mode))
-  "*isearch中での特殊なコマンドの入力に対する代替コマンドの alist。"
-  :group 'tcode)
-
-;;;
-;;; Default key binding
-;;;
-(when (eq tcode-emacs-version 'xemacs)
-  (define-key isearch-mode-map "\C-\\" 'isearch-toggle-tcode)
-  (put 'isearch-toggle-tcode 'isearch-command t)) ; for XEmacs
 
 ;;;
 ;;; patch to original functions in isearch.el of Emacs 22
@@ -75,20 +38,6 @@
 (defsubst tcode-isearch-regexp-function ()
   (or (bound-and-true-p isearch-regexp-function)
       (bound-and-true-p isearch-word)))
-
-;; isearch-message-state -> isearch--state-message from 24
-(defsubst tcode-isearch--state-message (x)
-  (or (when (fboundp 'isearch--state-message)
-	(isearch--state-message x))
-      (when (fboundp 'isearch-message-state)
-	(isearch-message-state x))))
-
-;; isearch-top-state -> none
-;; -> (isearch--set-state (car isearch-cmds)) from 24
-(defsubst tcode-isearch-top-state ()
-  (or (bound-and-true-p isearch-top-state)
-      (when (fboundp 'isearch--set-state)
-	(isearch--set-state (car isearch-cmds)))))
 
 (defadvice isearch-search-string (around tcode-handling activate)
   (let ((isearch-regexp (if (or (tcode-isearch-regexp-function) isearch-regexp)
@@ -243,76 +192,6 @@
     (unless (string= string "")
       (tcode-isearch-process-string string nil))))
 
-(defun tcode-isearch-prefix-mazegaki ()
-  "インクリメンタルサーチ中に前置型の交ぜ書き変換を行う。"
-  (let* (overriding-terminal-local-map
-	 (minibuffer-setup-hook (lambda ()
-				  (tcode-activate tcode-mode)
-				  (tcode-mazegaki-put-prefix)))
-	 (string (read-string (concat "Isearch read: " isearch-message)
-			      nil nil nil t)))
-    (unless (string= string "")
-      (tcode-isearch-process-string string nil))))
-
-(defun tcode-isearch-postfix-mazegaki ()
-  "インクリメンタルサーチ中に後置型の交ぜ書き変換を行う。"
-  (let ((orig-isearch-cmds isearch-cmds)
-	normal-end)
-    (unwind-protect
-	(let ((current-string isearch-message))
-	  ;; clear isearch states
-	  (while (cdr isearch-cmds)
-	    (isearch-pop-state))
-	  (let* (overriding-terminal-local-map
-		 (minibuffer-setup-hook
-		  (lambda ()
-		    (tcode-activate tcode-mode)
-		    (tcode-mazegaki-begin-conversion nil)))
-		 (string (read-string "Isearch read: "
-				      current-string nil nil t)))
-	    (unless (string= string "")
-	      (tcode-isearch-process-string string nil)
-	      (setq normal-end t))))
-      (unless normal-end
-	(setq isearch-cmds orig-isearch-cmds)
-	(tcode-isearch-top-state)))))
-
-(defun isearch-toggle-tcode ()
-  "インクリメンタルサーチ中のTコードモードをトグルする。"
-  (interactive)
-  (unless tcode-isearch-start-state
-    (toggle-input-method))
-  (isearch-update))
-
-(defun tcode-isearch-bushu-henkan (c1 c2)
-  ;; インクリメンタルサーチ中に C1 と C2 とで部首合成変換する。
-  (let ((c (tcode-bushu-compose-two-chars (string-to-char c1)
-					  (string-to-char c2))))
-    (if c
-	(let ((s (char-to-string c)))
-	  (let ((msg (tcode-isearch--state-message (car isearch-cmds))))
-	    (while (and msg
-			(string= msg (tcode-isearch--state-message (car isearch-cmds))))
-	      (isearch-delete-char)))
-	  (let ((msg (tcode-isearch--state-message (car isearch-cmds))))
-	    (while (and msg
-			(string= msg (tcode-isearch--state-message (car isearch-cmds))))
-	      (isearch-delete-char)))
-	  (isearch-process-search-string
-	   (tcode-isearch-make-string-for-wrapping s) s))
-      (ding)
-      (isearch-update))))
-
-(defun tcode-isearch-process-string (str prev)
-  "文字 STR を検索文字列に加えて検索する。
-PREV と合成できるときはその合成した文字で検索する。"
-  (if (stringp prev)
-      (tcode-isearch-bushu-henkan prev str)
-    (isearch-process-search-string
-     (if prev
-	 ""
-       (tcode-isearch-make-string-for-wrapping str)) str)))
-
 (defun tcode-regexp-unquote (str)
   (let* ((ll (string-to-list str))
 	 (l ll))
@@ -358,55 +237,6 @@ STR から `tcode-isearch-ignore-regexp' を取り除く。"
 	 string-list
 	 nil)
       string)))
-
-(defun tcode-isearch-start-bushu ()
-  "Tコードモードインクリメンタルサーチ中の前置型部首合成変換を始める。"
-  (tcode-bushu-init 2)
-  (setq isearch-message (concat isearch-message "▲"))
-  (isearch-push-state)
-  (isearch-update))
-
-(defun tcode-isearch-postfix-bushu ()
-  "Tコードモードインクリメンタルサーチ中の後置型部首合成変換を始める。"
-  (let ((p1 (string-match "..$" isearch-message))
-	(p2 (string-match ".$"  isearch-message)))
-    (if (null p1)
-	(ding)
-      (tcode-bushu-init 2)
-      (tcode-isearch-bushu-henkan (substring isearch-message p1 p2)
-				  (substring isearch-message p2)))))
-
-(defun tcode-isearch-bushu ()
-  "isearch-message中の部首合成の文字を調べる。"
-  (cond
-   ((string-match "▲$" isearch-message)
-    t)
-   ((string-match "▲.$" isearch-message)
-    (substring isearch-message (string-match ".$" isearch-message)))
-   (t
-    nil)))
-
-(defun tcode-isearch-bushu-alternate-conversion-command ()
-  "isearch中で通常とは逆の型の部首合成変換を始める。"
-  (interactive)
-  (if tcode-use-postfix-bushu-as-default
-      (tcode-isearch-start-bushu)
-    (tcode-isearch-postfix-bushu)))
-
-(defun tcode-isearch-bushu-conversion-command ()
-  "isearch中で部首合成変換を始める。"
-  (interactive)
-  (if (not tcode-use-postfix-bushu-as-default)
-      (tcode-isearch-start-bushu)
-    (tcode-isearch-postfix-bushu)))
-
-(defun tcode-isearch-init ()
-  "Tコードモードインクリメンタルサーチの初期化を行う。"
-  (setq tcode-mode (if (numberp tcode-isearch-start-state)
-		       (if (zerop tcode-isearch-start-state) nil t)
-		     (and (boundp 'tcode-mode)
-			  tcode-mode)))
-  (isearch-update))
 
 (add-hook 'isearch-mode-hook 'tcode-isearch-init)
 

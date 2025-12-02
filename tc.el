@@ -1074,8 +1074,7 @@ Emacsが起動されてから最初のtcode-modeで実行される。
 	   (not (file-exists-p tcode-data-directory)))
       (error "`tcode-data-directory'(%s)が存在しません。"
 	     tcode-data-directory))
-  (if tcode-use-isearch
-      (require tcode-isearch-type))
+  (tcode--load-isearch)
   (add-hook 'minibuffer-exit-hook 'tcode-exit-minibuffer)
   (when (and (fboundp 'inactivate-input-method)
 	     (fboundp 'defadvice))

@@ -62,3 +62,10 @@ Windowsは日本語環境にしておいた方が無難です。
 (require 'tc-setup)
 (add-to-list 'default-frame-alist '(font . "-outline-ＭＳ ゴシック-normal-normal-normal-mono-19-*-*-*-c-*-iso8859-1"))
 ```
+
+## isearch実装の選択
+
+isearch機能のT-Code用拡張は、次の2種類の実装から選ぶことができます。機能の内容や使い方は同じです。
+
+ - 従来実装。Emacsの内部関数の書き換えによってisearch拡張を実現しているため、Emacsに最近追加されたisearch機能が使えなくなる場合があります。`(setq tcode-use-isearch 'overwrite)` とすることで利用できます(デフォルト)。
+ - advice機能を用いた実装。Emacs内部関数の書き換えを無くした実装なので、Emacsのバージョンアップによるisearch機能の変化に追従しやすくなっています。`(setq tcode-use-isearch 'advice)` とすることで利用できます。
