@@ -78,8 +78,6 @@
 
 (defun tcode-2byte-alnum-input-method (ch)
   "The 2byte alnum input function for T-Code."
-  (setq last-command 'self-insert-command
-	last-command-event ch)
   (list (tcode-1-to-2 ch)))
 
 (unless (boundp 'input-method-function)

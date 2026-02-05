@@ -799,9 +799,6 @@
 
 (ert-deftest tctest-ja-alnum-undo-chars-and-dels ()
   "ja-alnum input method で削除と文字入力がまとめて undo されない。"
-  ;; 既知の問題: https://github.com/kanchoku/tc/pull/32#issue-3581879791
-  ;; の「Fix undo amalgamation of insertion and deletion」の説明参照。
-  :expected-result :failed
   (should-not (tctest-cmp "[IMON] June DEL DEL ly [UNDO]"
     :expect "Ｊｕ<!>"
     :requires '(tc-ja-alnum) :input-method "japanese-2byte-alnum")))
@@ -960,8 +957,6 @@
 ;;     ...そうでない場合は、そのままスペースを挿入します。
 (ert-deftest tctest-elec-non-kanji-space ()
   "(electric)IM オン時、C-f SPC 漢 で、空白と「漢」挿入かつ IM オンのまま。"
-  ;; 既知の問題: https://github.com/kanchoku/tc/issues/40
-  :expected-result :failed
   (should-not (tctest-cmp "[IMON] C-f SPC 漢 [MODE]"
     :initial "あい"
     :expect "あ 漢[TC]<!>い"
@@ -973,8 +968,6 @@
 ;;               取り除かれます。
 (ert-deftest tctest-elec-space-tab-off-after-non-char ()
   "(electric)IM オン時、C-f 後に「SPC TAB」でスペース挿入無しで IM オフ。"
-  ;; 既知の問題: https://github.com/kanchoku/tc/issues/40
-  :expected-result :failed
   (should-not (tctest-cmp "[IMON] C-f SPC TAB [MODE]"
     :initial "あい"
     :expect "あ[--]<!>い"

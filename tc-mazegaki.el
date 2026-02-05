@@ -1138,7 +1138,8 @@ NOT-QUIT が nil でないときは、読みの状態に戻すだけで、終了
 	      (tcode-mazegaki-construct-yomi
 	       (+ tcode-mazegaki-current-yomi-length
 		  tcode-mazegaki-current-offset)))
-	     (tcode-auto-remove-help-char)))))
+	     (tcode-auto-remove-help-char))
+	(tcode--finish-conversion))))
 
 (add-hook 'tcode-clear-hook 'tcode-mazegaki-finish)
 
@@ -1646,6 +1647,9 @@ CONVERSION が nil でないとき、補完後(補完を行った場合のみ)�
 (defun tcode-mazegaki-put-prefix ()
   "前置型交ぜ書き変換の開始地点の印を付ける。"
   (interactive)
+  (tcode--start-prefix-conversion #'tcode-mazegaki-put-prefix-core))
+
+(defun tcode-mazegaki-put-prefix-core ()
   (setq tcode-mazegaki-prefix (point))
   (add-hook 'post-command-hook 'tcode-mazegaki-put-conversion-face))
 

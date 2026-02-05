@@ -65,7 +65,13 @@ Windowsは日本語環境にしておいた方が無難です。
 
 ## isearch実装の選択
 
-isearch機能のT-Code用拡張は、次の2種類の実装から選ぶことができます。機能の内容や使い方は同じです。
+isearch機能のT-Code用拡張は、次の3種類の実装から選ぶことができます。機能の内容や使い方は同じです。
 
  - 従来実装。Emacsの内部関数の書き換えによってisearch拡張を実現しているため、Emacsに最近追加されたisearch機能が使えなくなる場合があります。`(setq tcode-use-isearch 'overwrite)` とすることで利用できます(デフォルト)。
  - advice機能を用いた実装。Emacs内部関数の書き換えを無くした実装なので、Emacsのバージョンアップによるisearch機能の変化に追従しやすくなっています。`(setq tcode-use-isearch 'advice)` とすることで利用できます。
+ - input method方式による実装。T-Code自体の実装方式を変える実験的な実装です。Emacs内部関数の書き換えを無くし、さらに、バッファ編集中とisearch中で、共通のT-Code実装を用います。一部、上2つの実装とは動作が異なります。例:
+    + isearch中に句読点、カタカナモードの切り換えが可能です(全角英数モードはどの実装でも可能)。
+    + isearch中の前置変換終了後、minibufferを終了させるためのRETキーが不要です。
+    + 多段の前置部首合成変換が可能です。
+
+   `(setq tcode-use-isearch 'im)` とすることで利用できます。
